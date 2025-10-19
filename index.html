@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>BARGAI Authenticated Order App (Offline + Reports)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        :root {
+            --app-bg: #440753;
+            --green-btn: #38c172;
+            --red-btn: #e3342f;
+            --primary-btn: #6a1a7f;
+            --white-text: #ffffff;
+            --dark-text: #4a4a4a;
+            --bill-border: 1px solid rgba(255,255,255,0.5);
+            --input-bg: #f4f4f4;
+        }
+
+        html { height:100%; }
+        
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: #f0f0f0;
+            margin: 0;
+            padding: 10px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            min-height:100vh;
+            box-sizing:border-box;
+        }
+        .app-container {
+            width:95%;
+            max-width:420px;
+            background: var(--app-bg);
+            color: var(--white-text);
+            border-radius:15px;
+            padding:15px;
+            box-shadow:0 6px 20px rgba(0,0,0,0.25);
+            display:flex;
+            flex-direction:column;
+            position:relative;
+            justify-content: center;
+            align-items:center;
+            min-height: 480px;
+        }
+
+
+
+        h1{font-size:1.5rem;margin-bottom: 20px;text-align:center}
+        p{font-size:1.0rem; text-align:center}
+
+        .app-view{display:none;width:100%;flex-direction:column}
+
+        .auth-view{padding:20px;background:rgba(255, 255, 255, 0.169);border-radius:12px;margin-top:16px;flex-grow:1}
+
+        .decision-view{padding:20px;background:rgb(255, 255, 255, 0.169);border-radius:12px;margin-top:16px;flex-grow:1;display:flex; flex-direction: column;align-items: center;gap:20px}
+
+        .auth-input,.auth-btn{width:100%;padding:12px;margin-bottom:12px;border-radius:8px;border:0;box-sizing:border-box;font-size:1rem}
+        .auth-input{background:var(--input-bg);color:var(--dark-text);text-align:center}
+        .auth-btn{font-weight:700;cursor:pointer}
+        .green-btn{background:var(--green-btn);color:#fff;border:none}
+        .primary-btn{background:var(--primary-btn);color:#fff;border:none}
+        .red-btn{background:var(--red-btn);color:#fff;border:none}
+        .summary-header-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+        .logout-btn{background:#ec0707;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;display: block}
+        .season-btn{width:100%;padding:12px;margin-bottom:12px;border-radius:8px;border:0;box-sizing:border-box;font-size:1rem;font-weight:700;cursor:pointer}
+
+        #category-view-buttons{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:14px;
+            padding:10px;
+            border-radius:10px;
+            background: rgba(255,255,255,0.08);
+            overflow:auto;
+            max-height:340px;
+        }
+        .category-btn{
+            padding:18px 8px;border-radius:10px;border:0;font-weight:800;font-size:1.05rem;cursor:pointer;
+            color:var(--white-text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:90px;
+            box-shadow:0 6px 16px rgba(0,0,0,0.18);
+        }
+        .category-icon{width:56px;height:56px;object-fit:contain;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.2))}
+        .items-list-container, #summary-data-area, #report-card {
+            background: rgba(255,255,255,0.08); border-radius:10px; padding:8px; flex-grow:1; overflow:auto; max-height:340px;
+        }
+
+
+        /* /* Before this line is for the everything inside the card inner big card that holds each cards which holds the image, name, qty and price of the each items. */
+
+        #items-list-container {
+            display: grid;
+            /* This creates exactly two columns of equal width (1fr) */
+            grid-template-columns: 1fr 1fr; 
+            gap: 8px; /* Controls the space between the cards */
+            padding: 8px; /* Controls the padding around the entire list */
+        }
+
+        .item-row {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; 
+            align-items: center;
+            
+            /* MODIFIED: Reduce padding and min-height */
+            padding: 8px 5px;          
+            min-height: 100px;         /* Significantly reduced minimum height */
+            max-height: 140px;         /* Max height helps cap the size */
+            
+            /* Keep existing styling */
+            border-radius: 30px;
+            margin: 6px 6px;
+            color: #fff;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        /* MODIFIED: Shrink the image size */
+        .item-image {
+            max-width: 40px;      /* Reduced from 80px */
+            max-height: 40px;     /* Reduced from 80px */
+            object-fit: contain;
+            margin-bottom: 4px; /* Reduced from 8px */
+            border-radius: 8px;
+        }
+
+        /* MODIFIED: Shrink font size and reduce spacing below name */
+        .item-name {
+            text-align: center;
+            font-size: 0.9em;       /* Reduced from 1.1em */
+            margin-bottom: 8px;     /* Reduced from 12px */
+            width: 100%;
+        }
+
+        .controls-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center; 
+            flex-shrink: 0; 
+            margin-top: auto;
+        }
+
+        .quantity-select,.quantity-input{
+            width:50px;
+            padding:2px;          
+            height: 32px;         
+            border-radius:20px;
+            border:0;
+            text-align:left;
+            box-sizing:border-box;
+            font-size:0.7em
+        }
+
+        .price-btn{
+            padding: 2px;    /* Reduced vertical padding */
+            border-radius:20px;
+            border:0; 
+            height: 32px;         /* Reduced from 40px */
+            min-width:60px;       /* Slightly smaller min-width */
+            cursor:pointer;
+            font-size:0.7em
+        }
+
+        
+
+        /* Before this line is for the everything inside the card inner big card that holds each cards which holds the image, name, qty and price of the each items. */
+
+
+
+        .action-buttons{display:flex;gap:8px;margin-top:12px}
+        .action-buttons .btn{flex:1;padding:20px;border-radius:10px;border:0;font-weight:800}
+
+        
+
+
+        /* Modal */
+        .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;display:none;justify-content:center;align-items:center;background:rgba(0,0,0,0.7);z-index:2000}
+        .modal-content{background:#fff;color:var(--app-bg);padding:20px;border-radius:12px;max-width:360px;width:90%}
+        .modal-buttons{display:flex;gap:10px;margin-top:12px}
+        .modal-btn{flex:1;padding:10px;border-radius:8px;border:0;font-weight:700;cursor:pointer}
+        /* Summary / bill styles */
+        .summary-table-header,.summary-item-row{display:grid;grid-template-columns:2fr 1fr 1.2fr 1.2fr;padding:8px 6px;border-bottom:1px dashed rgba(255,255,255,0.12);align-items:center}
+        .summary-grand-total{display:flex;justify-content:space-between;font-weight:900;padding:12px 6px;margin-top:10px;border-top:2px solid rgba(255,255,255,0.2)}
+        /* Report table */
+        .report-table{width:100%;border-collapse:collapse;color:#222}
+        .report-table th,.report-table td{padding:8px;border-bottom:1px solid #e6e6e6;text-align:right}
+        .report-table th:first-child,.report-table td:first-child{text-align:left}
+        .report-card { background:#fff;padding:12px;border-radius:10px;color:var(--dark-text) }
+        #message-box{position:fixed;top:18px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:8px;color:#fff;display:none;z-index:3000;font-weight:800}
+        @media (max-width:420px){ #category-view-buttons,#dashboard-buttons{grid-template-columns:1fr} }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div id="message-box"></div>
+
+        <div id="loading-indicator" class="modal-overlay" style="display:none">
+            <div class="modal-content">
+                <p style="color:var(--app-bg)">Loading...</p>
+            </div>
+        </div>
+
+        <!-- SETUP VIEW -->
+        <div class="app-view" id="setup-view">
+            <div class="auth-view">
+                <h1>Initial Setup</h1>
+                <p>Set a strong password and a backup word for session recovery. Data is stored locally (encrypted).</p>
+                <input id="setup-password" type="password" class="auth-input" placeholder="Password (min 6 chars)" />
+                <input id="setup-backup-word" type="text" class="auth-input" placeholder="Backup word (for reset)" />
+                <button id="setup-save-btn" class="auth-btn green-btn">Save & Proceed</button>
+            </div>
+        </div>
+
+        <!-- LOGIN VIEW -->
+        <div class="app-view" id="login-view">
+            <div class="auth-view">
+                <h1>Login Page</h1>
+                <input id="login-password" type="password" class="auth-input" placeholder="Password" />
+                <button id="login-btn" class="auth-btn green-btn">Login</button>
+                <button id="forgot-password-btn" class="auth-btn primary-btn" style="background:#f6993f">Forgot Password?</button>
+                <button id="login-close-btn" class="auth-btn red-btn">Close Tab</button>
+            </div>
+        </div>
+
+        <!-- Decision board VIEW -->
+        <div class="app-view" id="dashboard-view">
+            <div class="decision-view">
+                <h1>K garni?</h1>
+                
+                <button id="start-selling-btn" class="auth-btn" style="--item-color:#3498db;background:#3498db">Start Selling</button>
+            
+                <button id="see-report-btn" class="auth-btn" style="--item-color:#a4508b;background:#a4508b">See Today's Report</button>
+
+                <button id="decision-logout-btn" class="logout-btn"> Logout </button>
+
+            </div>
+        </div>
+
+
+        <!-- Season View -->
+         <div class="app-view" id="season-view">
+            <div class="auth-view">
+                <h1>Select Season</h1>             
+
+                <button id="summer-btn" class="season-btn" style="background:#d4e824">Summer</button>
+                <button id="winter-btn" class="season-btn" style="background:#1ae3e7">Winter</button>
+
+                <button id="season-back-btn" class="season-btn" style="background:rgb(231, 9, 9)">Back</button>
+            </div>
+        </div>
+
+        <!-- CATEGORY VIEW -->
+        <div class="app-view" id="category-view">
+            <div class="summary-header-bar">
+                <h1>Categories</h1>
+                <button id="category-back-btn" class="back-btn" style="
+                background: var(--green-btn);
+                border: 1px solid #3b0244; 
+                color: var(--white-text, #ffffff);
+                padding: 5px 10px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+            " >Back</button>
+            </div>
+            <div id="category-view-buttons"></div>
+            <div class="action-buttons" style="margin-top:12px">
+                <button class="see-order-btn btn green-btn">See Order</button>
+                <button class="cancel-btn btn red-btn">Cancel All</button>
+            </div>
+        </div>
+
+        <!-- ORDER ENTRY -->
+        <div class="app-view" id="order-entry-view">
+            <div class="summary-header-bar">
+                <h3 id="current-category-title">Category</h3>
+                <button class="back-to-category-btn" style="background:var(--primary-btn);color:#fff;border:0;padding:8px;border-radius:8px">Back</button>
+            </div>
+            <div class="items-list-container" id="items-list-container"></div>
+            <div class="action-buttons" style="margin-top:12px">
+                <button class="see-order-btn btn green-btn">See Order</button>
+                <button class="cancel-btn btn red-btn">Cancel All</button>
+            </div>
+        </div>
+
+        
+
+        <!-- SUMMARY VIEW -->
+        <div class="app-view" id="summary-view">
+            <div id="order-summary-card">
+                <div class="summary-header-bar">
+                    <h3>Current Orders</h3>
+                    <button id="summary-back-btn" style="background:var(--primary-btn);color:#fff;border:0;padding:8px;border-radius:8px">Back</button>
+                </div>
+                <div id="summary-data-area">
+                    <div class="summary-table-header"><div>Items</div><div style="text-align:center">Qty</div><div style="text-align:right">Unit Price</div><div style="text-align:right">Amount</div></div>
+                    <div id="summary-items-list"></div>
+                </div>
+                <div style="padding:8px">
+                    <div style="display:flex;justify-content:space-between;margin-top: 4px;"><span>Total Items:</span><span id="summary-total-items" style="font-weight:800">0</span></div>
+
+                    <div style="display:flex;justify-content:space-between;margin-top: 8px;"><span>Sub Total:</span><span id="summary-subtotal" style="font-weight:800">₹ 0.00</span></div>
+                    
+                    <div style="display:flex;justify-content:space-between;margin-top:8px">
+                        <div style="display:flex; align-items:center; gap: 10px;">
+                            <span>Tax</span>
+                            <label class="toggle-switch"><input type="checkbox" id="tax-toggle-10"><span class="slider"></span></label>
+                        </div>
+                        <div id="summary-tax-amount">₹ 0.00</div>
+                    </div>
+                    
+                    <div style="display:flex;justify-content:space-between;margin-top:8px">
+                        <div style="display:flex; align-items:center; gap: 10px;">
+                            <span>VAT</span>
+                            <label class="toggle-switch"><input type="checkbox" id="vat-toggle"><span class="slider"></span></label>
+                        </div>
+                        <div id="summary-vat-amount">₹ 0.00</div>
+                    </div>
+                    
+                    <div style="display:flex;justify-content:space-between;margin-top:8px">
+                        <div style="display:flex; align-items:center; gap: 10px;">
+                            <span>Discount</span>
+                            <label class="toggle-switch"><input type="checkbox" id="discount-toggle"><span class="slider"></span></label>
+                        </div>
+                        <div id="summary-discount-amount">₹ 0.00</div>
+                    </div>
+                </div>
+                <div class="summary-grand-total"><span>Grand Total</span><span id="summary-total">₹ 0.00</span></div>
+                <div class="modal-buttons" style="margin-top:10px">
+                    <button id="summary-generate-bill-btn" class="modal-btn green-btn">Generate Bill</button>
+                    <button id="summary-edit-btn" class="modal-btn red-btn">Edit Order</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BILL VIEW -->
+        <div class="app-view" id="bill-view" style="align-items:center;">
+            <div id="bill-content" style="background:#fff; color:var(--dark-text); padding:10px; border-radius:10px; width:100%; font-weight:400;">
+                <div class="bill-header" style="text-align:center;padding-bottom:10px;border-bottom:2px solid #ddd;margin-bottom:8px">
+                    <h1 style="margin:0;color:var(--dark-text)">Shyam Kirana Pasal</h1>
+                    <p style="margin:0;color:#666">Kohalpur 10 Banke</p>
+                </div>
+                <div id="bill-box">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                        <div>Billed To: <span id="bill-customer-name">Customer</span></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                        <div>Date: <span id="bill-date">-</span></div>
+                        <div>Pan No: <span id="bill-pan-number">1234565647</span></div>
+                    </div>
+                    <div class="bill-table">
+                        <div class="bill-table-header" style="display:grid;grid-template-columns:3fr 1fr 1.3fr 1.3fr;padding:8px 6px;font-weight:700;border-bottom:1px solid #ddd;">
+                            <div>Items</div>
+                            <div style="text-align:center">Qty</div>
+                            <div style="text-align:right">Unit Price</div>
+                            <div style="text-align:right">Amount</div>
+                        </div>
+                        <div id="bill-items-container"></div>
+                    </div>
+                    <div style="margin-top:12px">
+                        <div style="display:flex;justify-content:space-between"><span>Total Items:</span><span id="bill-total-items">0</span></div>
+                        <div style="display:flex;justify-content:space-between"><span>Sub Total:</span><span id="bill-subtotal">₹ 0.00</span></div>
+                        <div style="display:flex;justify-content:space-between"><span>Tax:</span><span id="bill-tax-amount">₹ 0.00</span></div>
+                        <div style="display:flex;justify-content:space-between"><span>VAT:</span><span id="bill-vat-amount">₹ 0.00</span></div>
+                        <div style="display:flex;justify-content:space-between"><span>Discount:</span><span id="bill-discount-amount">₹ 0.00</span></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-weight:900;padding-top:10px;border-top:2px solid #ddd;margin-top:10px"><span>Grand Total</span><span id="bill-total">₹ 0.00</span></div>
+                </div>
+            </div>
+            
+            <div style="display:flex;gap:8px;margin-top:12px; width:100%;">
+                <button id="bill-save-btn" class="modal-btn green-btn">Save Bill</button>
+                <button id="bill-back-btn" class="modal-btn primary-btn">Back</button>
+                <button id="bill-close-btn" class="modal-btn red-btn">Close</button>
+            </div>
+        </div>
+
+    <!-- MODALS -->
+    <div id="interaction-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-title" style="margin:0 0 8px 0"></h3>
+            <input id="price-input" type="number" class="auth-input hidden-element" placeholder="Enter Price" style="text-align:left; display:none; margin-bottom: 12px;" />
+
+            <div id="modal-decision-buttons" class="modal-buttons" style="display:none">
+                <button id="modal-same-btn" class="modal-btn green-btn">Yes, Same Price</button>
+                <button id="modal-diff-btn" class="modal-btn red-btn">No, Different Prices</button>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:8px">
+                <button id="modal-confirm-btn" class="modal-btn primary-btn" style="display:none">Confirm</button>
+                <button id="modal-close-btn" class="modal-btn red-btn" style="display:none">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="discount-input-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin:0 0 8px 0">Set Discount</h3>
+            <div style="display:flex;gap:10px;justify-content:center;margin-bottom:8px">
+                <label><input type="radio" name="discountType" value="percent" checked> %</label>
+                <label><input type="radio" name="discountType" value="amount"> ₹</label>
+            </div>
+            <input id="discount-value-input" type="number" placeholder="Enter value" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ccc" />
+            <div class="modal-buttons">
+                <button id="discount-confirm-btn" class="modal-btn primary-btn">Apply</button>
+                <button id="discount-cancel-btn" class="modal-btn red-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="customer-name-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin:0 0 8px 0">Customer Name</h3>
+            <input id="customer-name-input" type="text" class="auth-input" placeholder="Customer Name" style="text-align:left;" />
+            <div class="modal-buttons" style="margin-top:10px">
+                <button id="customer-name-confirm-btn" class="modal-btn green-btn">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="confirm-title" style="margin:0 0 8px 0"></h3>
+            <p id="confirm-message" style="color:#666;margin:0 0 8px 0"></p>
+            <div class="modal-buttons">
+                <button id="confirm-yes-btn" class="modal-btn red-btn">Yes</button>
+                <button id="confirm-no-btn" class="modal-btn primary-btn">No</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="reset-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin:0 0 8px 0">Reset Password</h3>
+            <p style="color:#666;margin:0 0 8px 0">Enter your backup word and a new password.</p>
+            <input id="reset-backup-word-input" type="text" class="auth-input" placeholder="Backup Word" />
+            <input id="reset-new-password-input" type="password" class="auth-input" placeholder="New Password (Min 6 chars)" />
+            <div class="modal-buttons">
+                <button id="reset-confirm-btn" class="modal-btn green-btn">Set New Password</button>
+                <button id="reset-cancel-btn" class="modal-btn red-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPORT VIEW -->
+    <div class="modal-overlay" id="report-modal-overlay" style="display:none;z-index:1500">
+        <div class="modal-content" id="report-modal-content" style="max-width:640px;width:95%">
+            <h3 style="margin-top:0">Today's Sales Report</h3>
+            <div id="report-card" class="report-card" style="max-height:420px;overflow:auto">
+                <!-- report will be injected here -->
+            </div>
+            <div style="display:flex;gap:10px;margin-top:10px">
+                <button id="report-download-btn" class="modal-btn green-btn">Download Report (PNG)</button>
+                <button id="report-close-btn" class="modal-btn primary-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+    // -----------------------------
+    // Storage + encryption helpers
+    // -----------------------------
+    const STORAGE_SECURITY = 'bargai_security_config';
+    const STORAGE_DAILY = 'bargai_daily_sales';
+
+    function generateSalt(len = 8) {
+        const arr = new Uint8Array(len);
+        crypto.getRandomValues(arr);
+        return Array.from(arr, b => b.toString(16).padStart(2,'0')).join('');
+    }
+    function encryptConfig(obj) {
+        try {
+            const salt = generateSalt(6);
+            const json = JSON.stringify(obj);
+            const b64 = btoa(unescape(encodeURIComponent(json)));
+            return salt + ':' + b64;
+        } catch(e) { console.error('encrypt error', e); return null; }
+    }
+    function decryptConfig(stored) {
+        try {
+            if (!stored || stored.indexOf(':') === -1) return null;
+            const parts = stored.split(':');
+            const b64 = parts.slice(1).join(':');
+            const json = decodeURIComponent(escape(atob(b64)));
+            return JSON.parse(json);
+        } catch(e) { console.error('decrypt error', e); return null; }
+    }
+    function saveSecurityConfig(obj) {
+        try {
+            const enc = encryptConfig(obj);
+            if (!enc) throw new Error('encrypt failed');
+            localStorage.setItem(STORAGE_SECURITY, enc);
+            return true;
+        } catch(e) { console.error(e); return false; }
+    }
+    function loadSecurityConfig() {
+        try { const raw = localStorage.getItem(STORAGE_SECURITY); return raw ? decryptConfig(raw) : null; }
+        catch(e){ console.error(e); return null; }
+    }
+
+    function saveDailySales(rawObj) {
+        try {
+            const enc = encryptConfig(rawObj);
+            if (!enc) throw new Error('encrypt failed');
+            localStorage.setItem(STORAGE_DAILY, enc);
+            return true;
+        } catch(e) { console.error('saveDailySales failed', e); return false; }
+    }
+    function loadDailySalesRaw() {
+        try { const raw = localStorage.getItem(STORAGE_DAILY); return raw ? decryptConfig(raw) : null; }
+        catch(e){ console.error('loadDailySalesRaw failed', e); return null; }
+    }
+
+    // Ensure we always return today's object (auto-reset if date mismatch)
+    function loadDailySales() {
+        const todayKey = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+        let obj = loadDailySalesRaw();
+        if (!obj || obj.date !== todayKey) {
+            obj = { date: todayKey, categories: {} };
+            saveDailySales(obj);
+        }
+        return obj;
+    }
+
+    // Merge per-category saleSummary into storage
+    function addToDailySales(saleByCategory) {
+        if (!saleByCategory || Object.keys(saleByCategory).length === 0) return false;
+        const data = loadDailySales();
+        Object.keys(saleByCategory).forEach(cat => {
+            const incoming = saleByCategory[cat];
+            if (!data.categories[cat]) data.categories[cat] = { qty:0, subtotal:0, discount:0, tax:0, vat:0, grandTotal:0 };
+            const target = data.categories[cat];
+            target.qty += incoming.qty || 0;
+            target.subtotal += incoming.subtotal || 0;
+            target.discount += incoming.discount || 0;
+            target.tax += incoming.tax || 0;
+            target.vat += incoming.vat || 0;
+            target.grandTotal += incoming.grandTotal || 0;
+        });
+        return saveDailySales(data);
+    }
+
+    // Export helper: build saleByCategory from currentOrderData by mapping item names back to categories
+    function buildSaleByCategoryFromCurrentOrder(orderData) {
+        // Build a map itemName -> categoryName
+        const itemToCategory = {};
+        Object.keys(CATEGORIES_DATA).forEach(cat => {
+            CATEGORIES_DATA[cat].items.forEach(it => itemToCategory[it.name] = cat);
+        });
+        const map = {};
+        (orderData.items || []).forEach(i => {
+            const cat = itemToCategory[i.item.split(' (')[0]] || 'Uncategorized';
+            if (!map[cat]) map[cat] = { qty:0, subtotal:0, discount:0, tax:0, vat:0, grandTotal:0 };
+            map[cat].qty += i.quantity;
+            map[cat].subtotal += parseFloat(i.totalAmount) || 0;
+        });
+        // Apply tax/discount/vat proportions to each category entry based on subtotal share
+        const totalSubtotal = orderData.subtotal || 0;
+        Object.keys(map).forEach(cat => {
+            const proportion = totalSubtotal > 0 ? (map[cat].subtotal / totalSubtotal) : 0;
+            map[cat].discount = (orderData.discountAmount || 0) * proportion;
+            map[cat].tax = (orderData.taxAmount || 0) * proportion;
+            map[cat].vat = (orderData.vatAmount || 0) * proportion;
+            map[cat].grandTotal = (map[cat].subtotal - map[cat].discount) + map[cat].tax + map[cat].vat;
+        });
+        return map;
+    }
+
+    // --------------------------------
+    // App data & core logic (unchanged)
+    // --------------------------------
+    // Locate this in the <script> section (around line 431)
+    const CATEGORIES_DATA = {
+        // Add a season property to each category
+        'Apparel': { color:'#3498db', iconUrl:'images/shirt.png', items:[ {name:'Shirt',color:'#38c172', imageName:'shirt.png'}, {name:'Pant',color:'#a4508b'}, {name:'Vest',color:'#1e3a5f'}, {name:'Coat',color:'#3498db'}, {name:'Hoodie',color:'#38c112'} ], season: 'Summer' },
+
+        'Accessories': { color:'#a4508b', iconUrl:'', items:[ {name:'Belt',color:'#e74c3c'}, {name:'Purse',color:'#a4508b'} ], season: 'Summer' },
+        'Produce': { color:'#f6993f', iconUrl:'T-shirt.png', items:[ {name:'Aalu',color:'#f6993f'}, {name:'Chop',color:'#794bc4'} ], season: 'Summer' },
+        'Apparell': { color:'#3498db', iconUrl:'images/T-shirt.png', items:[ {name:'Shirt',color:'#38c172'}, {name:'Pant',color:'#a4508b'}, {name:'Vest',color:'#1e3a5f'}, {name:'Coat',color:'#3498db'}, {name:'Hoodie',color:'#38c172'} ], season: 'Winter' },
+        'Accessoriess': { color:'#a4508b', iconUrl:'', items:[ {name:'Belt',color:'#e74c3c'}, {name:'Purse',color:'#a4508b'} ], season: 'Winter' },
+        'Produces': { color:'#f6993f', iconUrl:'', items:[ {name:'Aalu',color:'#f6993f'}, {name:'Chop',color:'#794bc4'} ], season: 'Winter' },
+        'Apparelll': { color:'#3498db', iconUrl:'shirt.png', items:[ {name:'Shirt',color:'#38c172'}, {name:'Pant',color:'#a4508b'}, {name:'Vest',color:'#1e3a5f'}, {name:'Coat',color:'#3498db'}, {name:'Hoodie',color:'#38c172'} ], season: 'Summer' },
+        'Accessoriesss': { color:'#a4508b', iconUrl:'', items:[ {name:'Belt',color:'#e74c3c'}, {name:'Purse',color:'#a4508b'} ], season: 'Winter' },
+        'Producesss': { color:'#f6993f', iconUrl:'', items:[ {name:'Aalu',color:'#f6993f'}, {name:'Chop',color:'#794bc4'} ], season: 'Summer' },
+        'Accesss': { color:'#a4508b', iconUrl:'', items:[ {name:'Belt',color:'#e74c3c'}, {name:'Purse',color:'#a4508b'} ], season: 'Winter' },
+        'Acs': { color:'#a4508b', iconUrl:'', items:[ {name:'Belt',color:'#e74c3c'}, {name:'Purse',color:'#a4508b'} ], season: 'Winter' },
+        'Accessors': { color:'#a4508b', iconUrl:'', items:[ {name:'Belt',color:'#e74c3c'}, {name:'Purse',color:'#a4508b'} ], season: 'Winter' },
+        'Accessoss': { color:'#a4508b', iconUrl:'', items:[ {name:'Belt',color:'#e74c3c'}, {name:'Purse',color:'#a4508b'} ], season: 'Winter' },
+    };
+
+    let itemPriceState = {};
+    let currentCategory = '';
+    let currentSeason ='';
+    let discountState = { type:'percent', value:0, amount:0.00, isActive:false };
+    let currentOrderData = { items:[], subtotal:0, totalItemsCount:0, taxAmount:0, vatAmount:0, discountAmount:0, grandTotal:0, customerName:'Guest Customer' };
+    let currentItemPricingState = { itemName:'', totalQty:0, currentUnit:0, prices:[] };
+    const TAX_RATE = 0.10;
+    const VAT_RATE = 0.13;
+
+    // DOM refs
+    let setupView, loginView, dashboardView, seasonview, categoryView, orderEntryView, summaryView, billView;
+    let taxToggle10, vatToggle, discountToggle;
+    let interactionOverlay, discountInputOverlay, customerNameOverlay, confirmOverlay, resetOverlay, reportModalOverlay, reportModalContent;
+    let loadingIndicator;
+
+    function initializeItemState() {
+        itemPriceState = {};
+        Object.values(CATEGORIES_DATA).forEach(cat => cat.items.forEach(it => {
+            itemPriceState[it.name] = { qty:0, unitPrice:0, totalPrice:0, individualPrices:null, color: it.color };
+        }));
+    }
+
+    function showMessage(text, color) {
+        const box = document.getElementById('message-box');
+        if(!box) return;
+        box.textContent = text;
+        box.style.backgroundColor = color || '#333';
+        box.style.display = 'block';
+        setTimeout(()=>{ box.style.display = 'none'; }, 2200);
+    }
+
+    function hideAllModals() {
+        document.querySelectorAll('.modal-overlay').forEach(o => o.style.display = 'none');
+    }
+
+    function showView(viewId) {
+        document.querySelectorAll('.app-view').forEach(v => v.style.display = 'none');
+        let target = null;
+        switch(viewId) {
+            case 'setup': target = setupView; break;
+            case 'login': target = loginView; break;
+            case 'dashboard': target = dashboardView; break;
+            case 'season': target = seasonView; break;
+            case 'category': target = categoryView; renderCategoryView(); break;
+            case 'entry': target = orderEntryView; break;
+            case 'summary': target = summaryView; updateOrderSummary(); break;
+            case 'bill': target = billView; updateBillView(); break;
+        }
+        if(target) target.style.display = 'flex';
+        hideAllModals();
+    }
+
+    function setupEventListeners() {
+        setupView = document.getElementById('setup-view');
+        loginView = document.getElementById('login-view');
+        dashboardView = document.getElementById('dashboard-view');
+        categoryView = document.getElementById('category-view');
+        orderEntryView = document.getElementById('order-entry-view');
+        summaryView = document.getElementById('summary-view');
+        billView = document.getElementById('bill-view');
+        seasonView = document.getElementById('season-view');
+        taxToggle10 = document.getElementById('tax-toggle-10');
+        vatToggle = document.getElementById('vat-toggle');
+        discountToggle = document.getElementById('discount-toggle');
+        interactionOverlay = document.getElementById('interaction-modal-overlay');
+        discountInputOverlay = document.getElementById('discount-input-overlay');
+        customerNameOverlay = document.getElementById('customer-name-overlay');
+        confirmOverlay = document.getElementById('confirm-overlay');
+        resetOverlay = document.getElementById('reset-overlay');
+        reportModalOverlay = document.getElementById('report-modal-overlay');
+        reportModalContent = document.getElementById('report-card');
+        loadingIndicator = document.getElementById('loading-indicator');
+
+        // Setup save
+        document.getElementById('setup-save-btn').addEventListener('click', () => {
+            const password = document.getElementById('setup-password').value;
+            const backup = document.getElementById('setup-backup-word').value.trim();
+            if (!password || password.length < 6) return showMessage('Password must be at least 6 characters', '#e3342f');
+            if (!backup) return showMessage('Backup word required', '#e3342f');
+            const passwordHash = simpleHash(password);
+            const backupHash = simpleHash(backup);
+            const ok = saveSecurityConfig({ passwordHash, backupHash });
+            if (ok) { window.securityConfig = { passwordHash, backupHash }; showMessage('Setup saved. Please login.', '#38c172'); showView('login'); }
+            else showMessage('Failed to save setup', '#e3342f');
+        });
+
+        // Login -> show dashboard (new)
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const pass = document.getElementById('login-password').value;
+            const inputHash = simpleHash(pass);
+            if (window.securityConfig && inputHash === window.securityConfig.passwordHash) {
+                showMessage('Login successful', '#38c172');
+                showView('dashboard');
+            } else showMessage('Invalid password', '#e3342f');
+        });
+
+        document.getElementById('login-close-btn').addEventListener('click', () => {
+            showMessage('Please close the current tab manually.', 'red');
+        });
+
+        document.getElementById('forgot-password-btn').addEventListener('click', () => {
+            resetOverlay.style.display = 'flex';
+            document.getElementById('reset-backup-word-input').value = '';
+            document.getElementById('reset-new-password-input').value = '';
+        });
+
+        document.getElementById('reset-confirm-btn').addEventListener('click', () => {
+            const backup = document.getElementById('reset-backup-word-input').value.trim();
+            const newPass = document.getElementById('reset-new-password-input').value;
+            if (!newPass || newPass.length < 6) return showMessage('New password minimum 6 chars', '#e3342f');
+            const backupHash = simpleHash(backup);
+            if (backupHash === window.securityConfig.backupHash) {
+                const newHash = simpleHash(newPass);
+                const ok = saveSecurityConfig({ passwordHash:newHash, backupHash: window.securityConfig.backupHash });
+                if (ok) { window.securityConfig = { passwordHash:newHash, backupHash: window.securityConfig.backupHash }; showMessage('Password reset. Please login.', '#38c172'); hideAllModals(); showView('login'); }
+                else showMessage('Failed to reset', '#e3342f');
+            } else showMessage('Invalid backup word', '#e3342f');
+        });
+        document.getElementById('reset-cancel-btn').addEventListener('click', () => hideAllModals());
+
+        
+        // 1. Dashboard actions
+        document.getElementById('start-selling-btn').addEventListener('click', () => showView('season')); // <-- CHANGE 'category' to 'season'
+        document.getElementById('see-report-btn').addEventListener('click', () => { renderReportView(); reportModalOverlay.style.display = 'flex'; });
+
+        // Season button Listeners
+        document.getElementById('summer-btn').addEventListener('click', () => { currentSeason = 'Summer'; showView('category');});
+        document.getElementById('winter-btn').addEventListener('click', () => { currentSeason = 'Winter'; showView('category');});
+        
+
+        // Season back button
+        document.getElementById('season-back-btn').addEventListener('click', () => {
+            
+            showView('dashboard'); // Go back to the season view
+        });
+
+
+        // Back button in the categories
+        document.getElementById('category-back-btn').addEventListener('click', () => {
+            currentSeason = ''; 
+            showView('season'); // Go back to the season view
+        });
+
+        // Logout button in header(s)
+        document.querySelectorAll('.logout-btn').forEach(b => b.addEventListener('click', () => showLogoutConfirmation()));
+
+        // Category / entry navigation
+        document.querySelectorAll('.back-to-category-btn').forEach(b => b.addEventListener('click', () => showView('category')));
+        document.getElementById('summary-back-btn').addEventListener('click', () => showView('entry'));
+        document.getElementById('summary-edit-btn').addEventListener('click', () => { if (currentCategory) showView('entry'); else showView('category'); });
+
+        // See order buttons
+        document.querySelectorAll('.see-order-btn').forEach(btn => btn.addEventListener('click', () => {
+            const data = calculateOrderData();
+            if (!data.items || data.items.length === 0) { showMessage('Order is empty', '#e3342f'); return; }
+            showView('summary');
+        }));
+
+        // Cancel
+        document.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', () => {
+            showConfirmation('Confirm Cancellation','Clear current order selections?', () => { clearAllOrderData(); showMessage('Order reset', '#e3342f'); showView('category'); });
+        }));
+
+        // Discount toggle
+        taxToggle10.addEventListener('change', updateOrderSummary);
+        vatToggle.addEventListener('change', updateOrderSummary);
+        discountToggle.addEventListener('change', (e) => { if (e.target.checked) showDiscountInputModal(); else updateOrderSummary(); });
+
+        document.getElementById('discount-confirm-btn').addEventListener('click', () => {
+            const value = parseFloat(document.getElementById('discount-value-input').value);
+            const type = document.querySelector('input[name="discountType"]:checked').value;
+            if (isNaN(value) || value <= 0) return showMessage('Invalid discount value', '#e3342f');
+            discountState.value = value; discountState.type = type; discountToggle.checked = true; hideAllModals(); updateOrderSummary();
+        });
+        document.getElementById('discount-cancel-btn').addEventListener('click', () => { discountToggle.checked = false; discountState.value = 0; updateOrderSummary(); hideAllModals(); });
+
+        document.getElementById('summary-generate-bill-btn').addEventListener('click', () => {
+            calculateOrderData();
+            document.getElementById('customer-name-input').value = (currentOrderData.customerName === 'Guest Customer') ? '' : currentOrderData.customerName;
+            customerNameOverlay.style.display = 'flex';
+        });
+
+        document.getElementById('customer-name-confirm-btn').addEventListener('click', () => {
+            const name = document.getElementById('customer-name-input').value.trim() || 'Guest Customer';
+            currentOrderData.customerName = name; hideAllModals(); showView('bill');
+        });
+
+        document.getElementById('bill-back-btn').addEventListener('click', () => showView('summary'));
+        document.getElementById('bill-close-btn').addEventListener('click', () => {
+            showConfirmation('Confirm Order Closure','Close this bill and clear the order?', () => { clearAllOrderData(); showMessage('Order cleared', '#38c172'); showView('category'); });
+        });
+
+        // Bill save: add to daily sales then create bill image
+        document.getElementById('bill-save-btn').addEventListener('click', () => {
+            loadingIndicator.style.display = 'flex';
+            // First, capture aggregated sale-by-category from currentOrderData
+            const data = calculateOrderData();
+            const saleByCat = buildSaleByCategoryFromCurrentOrder(data);
+            const ok = addToDailySales(saleByCat);
+            if (!ok) {
+                showMessage('Failed to update daily report', '#e3342f');
+                loadingIndicator.style.display = 'none';
+                return;
+            }
+            // Next, generate bill image (existing flow)
+            const billContent = document.getElementById('bill-content');
+            const billItemsContainer = document.getElementById('bill-items-container');
+            billItemsContainer.style.maxHeight = 'none';
+            billItemsContainer.style.overflowY = 'visible';
+            html2canvas(billContent, { scale: 3, useCORS: true }).then(canvas => {
+                billItemsContainer.style.maxHeight = '200px';
+                billItemsContainer.style.overflowY = 'auto';
+                loadingIndicator.style.display = 'none';
+                const link = document.createElement('a');
+                link.download = `Bill_${currentOrderData.customerName.replace(/\s/g,'_')}_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showMessage('Bill saved and report updated', '#38c172');
+            }).catch(err => {
+                billItemsContainer.style.maxHeight = '200px';
+                billItemsContainer.style.overflowY = 'auto';
+                loadingIndicator.style.display = 'none';
+                console.error('bill image error', err);
+                showMessage('Error generating bill image', '#e3342f');
+            });
+        });
+
+        // Interaction modal close
+        document.getElementById('modal-close-btn').addEventListener('click', () => { hideInteractionModal(); resetPricingState(); });
+
+        // Report modal
+        document.getElementById('report-close-btn').addEventListener('click', () => { reportModalOverlay.style.display = 'none'; });
+        document.getElementById('report-download-btn').addEventListener('click', () => {
+            const card = document.getElementById('report-card');
+            const today = new Date().toISOString().slice(0,10);
+            html2canvas(card, { scale: 2, useCORS: true }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Report_${today}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showMessage('Report downloaded', '#38c172');
+            }).catch(e => { console.error('report download err', e); showMessage('Error creating report image', '#e3342f'); });
+        });
+
+    } // end setupEventListeners
+
+    // Logout / confirm flows
+    // Logout / confirm flows
+    function showLogoutConfirmation() {
+        document.getElementById('confirm-title').textContent = "Logout Options";
+        document.getElementById('confirm-message').textContent = "Clear session & sales data, or just logout (keep sales)?";
+        confirmOverlay.style.display = 'flex';
+        const yesBtn = document.getElementById('confirm-yes-btn');
+        const noBtn = document.getElementById('confirm-no-btn');
+        yesBtn.textContent = "Clear Session & Logout";
+        yesBtn.style.backgroundColor = 'var(--red-btn)';
+        noBtn.textContent = "Just Logout (Keep Sales)";
+        noBtn.style.backgroundColor = 'var(--primary-btn)';
+        
+        // FIX 1: Change 'yesBtn' action to show the final warning instead of logging out directly
+        yesBtn.onclick = async () => { 
+            hideAllModals(); 
+            showClearDataWarning(); 
+        };
+        
+        // Keep 'noBtn' action the same
+        noBtn.onclick = async () => { hideAllModals(); performLogout(false); };
+    }
+
+    // New function to show the strong data deletion warning
+    function showClearDataWarning() {
+        // This assumes you are calling a function named showConfirmation(title, message, callback, yesText, noText)
+        showConfirmation(
+            '⚠️ DANGER: Permanent Deletion',
+            'Are you **ABSOLUTELY sure**? This will permanently delete ALL saved sales data and application settings. This action CANNOT BE UNDONE.',
+            () => {
+                // Only proceed with the permanent action (performLogout(true)) if the user confirms this warning
+                performLogout(true); 
+            },
+            'YES, DELETE EVERYTHING', // Confirm button text
+            'Cancel Deletion'         // Cancel button text
+        );
+    }
+
+
+    async function performLogout(clearSession) {
+        loadingIndicator.style.display = 'flex';
+        try {
+            if (clearSession) {
+                localStorage.removeItem(STORAGE_DAILY);
+                localStorage.removeItem(STORAGE_SECURITY);
+                window.securityConfig = null;
+                showMessage('Session & sales cleared. Logged out.', '#e3342f');
+                setTimeout(()=> location.reload(), 400);
+            } else {
+                showMessage('Logged out. Sales kept.', '#38c172');
+                setTimeout(()=> location.reload(), 400);
+            }
+        } catch(e) {
+            console.error('logout err', e);
+            showMessage('Logout failed', '#e3342f');
+        } finally { loadingIndicator.style.display = 'none'; }
+    }
+
+    function showConfirmation(title, message, onConfirm, yesText='Yes', noText='No') {
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-message').textContent = message;
+        const yesBtn = document.getElementById('confirm-yes-btn');
+        const noBtn = document.getElementById('confirm-no-btn');
+        yesBtn.textContent = yesText; noBtn.textContent = noText;
+        confirmOverlay.style.display = 'flex';
+        yesBtn.onclick = () => { hideAllModals(); onConfirm(); };
+        noBtn.onclick = () => hideAllModals();
+    }
+
+    // ------------------------------
+    // Items rendering & pricing
+    // ------------------------------
+    function formatPrice(p) { return `₹ ${parseFloat(p || 0).toFixed(2)}`; }
+    function calculateTotalFromIndividualPrices(jsonString) { try{ return JSON.parse(jsonString).reduce((a,b)=>a+b,0);}catch(e){return 0;} }
+
+    // Around line 656, inside function renderCategoryView():
+
+    function renderCategoryView() {
+        const container = document.getElementById('category-view-buttons');
+        
+        // Filter categories based on the selected season (NEW LOGIC)
+        const filteredCategories = Object.keys(CATEGORIES_DATA).filter(key => 
+            CATEGORIES_DATA[key].season === currentSeason
+        );
+        
+        container.innerHTML = filteredCategories.map(key => { // <-- USE filteredCategories
+            const c = CATEGORIES_DATA[key];
+            const iconHtml = c.iconUrl 
+                ? `<img src="${c.iconUrl}" class="category-icon" alt="${key} Icon" />` 
+                : `<div class="category-icon" style="background:rgba(255,255,255,0.2);border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center">?</div>`;
+            return `<button class="category-btn" data-category="${key}" style="background:${c.color}">${iconHtml}<div style="font-size:18px">${key}</div></button>`;
+        }).join('');
+        
+        // ... rest of the function remains the same
+        document.querySelectorAll('.category-btn').forEach(btn => btn.addEventListener('click', (ev) => {
+            currentCategory = ev.currentTarget.dataset.category;
+            renderItemsForCategory(currentCategory);
+            showView('entry');
+        }));
+    }
+
+    function renderItemsForCategory(catName) {
+    document.getElementById('current-category-title').textContent = catName;
+    const category = CATEGORIES_DATA[catName];
+    const container = document.getElementById('items-list-container');
+    container.innerHTML = category.items.map(it => {
+        const state = itemPriceState[it.name];
+        const priceText = state.totalPrice>0 ? formatPrice(state.totalPrice) : (state.individualPrices ? formatPrice(calculateTotalFromIndividualPrices(state.individualPrices)) : 'Price');
+        const priceClass = (state.totalPrice>0 || state.individualPrices) ? 'priced' : '';
+        const isCustom = (state.qty>10);
+        const selectValue = isCustom ? 'custom' : (state.qty>=1 ? String(state.qty) : '0');
+        
+        // Construct the full image URL using the item's specific imageName
+        // You may need to change '/images/' to your actual image folder path.
+        const imageUrl = 'images/' + (it.imageName || 'default.png'); 
+        
+        return `<div class="item-row" data-item="${it.name}" style="background:${it.color}">
+                    <img src="${imageUrl}" alt="${it.name}" class="item-image" /> 
+                    
+                    <span class="item-name">${it.name}</span> 
+                    
+                    <div class="controls-group"> 
+                        <div class="quantity-control">
+                            <select class="quantity-select" data-item-name="${it.name}">
+                                <option value="0" ${selectValue==='0'?'selected':''}>Qty</option>
+                                ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}" ${selectValue==String(n)?'selected':''}>${n}</option>`).join('')}
+                                <option value="custom" ${selectValue==='custom'?'selected':''}>Custom</option>
+                            </select>
+                            <input class="quantity-input ${isCustom?'':'hidden-element'}" type="number" data-item-name="${it.name}" value="${isCustom?state.qty:0}" min="0" max="999" style="display:${isCustom?'block':'none'}" />
+                        </div>
+                        <button class="price-btn ${priceClass}" data-item-name="${it.name}">${priceText}</button>
+                    </div>
+                </div>`;
+    }).join('');
+    setupItemEventListeners();
+}
+
+    function setupItemEventListeners() {
+        document.querySelectorAll('#items-list-container .item-row').forEach(row => {
+            const itemName = row.dataset.item;
+            const select = row.querySelector('.quantity-select');
+            const input = row.querySelector('.quantity-input');
+            const updateStateUI = (q) => {
+                handleQuantityChange(itemName, q);
+                if (q>10) { select.value='custom'; input.value = q; input.style.display='block'; select.style.display='none'; }
+                else if (q>=1) { select.value=String(q); input.value=0; input.style.display='none'; select.style.display='block'; }
+                else { select.value='0'; input.value=0; input.style.display='none'; select.style.display='block'; }
+            };
+            select.addEventListener('change',(e)=> {
+                if (e.target.value === 'custom') { input.style.display='block'; select.style.display='none'; const cur = getItemQuantity(itemName); input.value = cur>10?cur:11; input.focus(); }
+                else updateStateUI(parseInt(e.target.value));
+            });
+            input.addEventListener('input',(e)=> updateStateUI(parseInt(e.target.value) || 0));
+            input.addEventListener('blur', (e)=>{ const c = parseInt(input.value) || 0; if (c<=10) updateStateUI(c); });
+
+            const priceBtn = row.querySelector('.price-btn');
+            priceBtn.addEventListener('click', (ev) => {
+                const count = getItemQuantity(itemName);
+                if (count === 0) { showMessage('Set quantity before pricing', '#e3342f'); return; }
+                resetPricingState();
+                if (count > 1) showPriceDecisionModal(itemName, count);
+                else showSinglePriceInputModal(itemName, 1, false);
+            });
+        });
+    }
+
+    function getItemQuantity(name) { return itemPriceState[name]?.qty || 0; }
+    function handleQuantityChange(itemName, newCount) {
+        let c = parseInt(newCount) || 0; if (c<0) c=0;
+        const st = itemPriceState[itemName];
+        st.qty = c;
+        if (c===0) { st.totalPrice = 0; st.unitPrice=0; st.individualPrices=null; }
+        updateItemRowUI(itemName);
+        if (summaryView && summaryView.style.display !== 'none') updateOrderSummary();
+    }
+    function updateItemRowUI(itemName) {
+        const row = document.querySelector(`#items-list-container [data-item="${itemName}"]`);
+        if (!row) return;
+        const st = itemPriceState[itemName];
+        const btn = row.querySelector('.price-btn');
+        let txt = 'Price', cls='';
+        if (st.totalPrice>0) { txt = formatPrice(st.totalPrice); cls='priced'; }
+        else if (st.individualPrices) { txt = formatPrice(calculateTotalFromIndividualPrices(st.individualPrices)); cls='priced'; }
+        btn.textContent = txt; btn.className = `price-btn ${cls}`;
+    }
+
+    function showSinglePriceInputModal(itemName, totalQty, isUnitPricing) {
+        hideInteractionModal();
+        document.getElementById('modal-title').textContent = isUnitPricing ? `Enter unit price for ${itemName} (Qty ${totalQty})` : `Enter price for ${itemName}`;
+        const priceInput = document.getElementById('price-input');
+        priceInput.style.display='block'; document.getElementById('modal-confirm-btn').style.display='inline-block'; document.getElementById('modal-close-btn').style.display='inline-block';
+        interactionOverlay.style.display='flex';
+        const existing = itemPriceState[itemName].unitPrice;
+        priceInput.value = existing>0?existing:'';
+        document.getElementById('modal-confirm-btn').onclick = () => {
+            const price = parseFloat(priceInput.value);
+            if (isNaN(price) || price<=0) { showMessage('Enter valid price', '#e3342f'); return; }
+            const unitPrice = price;
+            const final = unitPrice * totalQty;
+            const st = itemPriceState[itemName];
+            st.totalPrice = final; st.unitPrice = unitPrice; st.individualPrices = null;
+            updateItemRowUI(itemName);
+            showMessage(`Price set: ${formatPrice(final)}`, '#38c172');
+            hideInteractionModal(); resetPricingState();
+        };
+    }
+
+    function showPriceDecisionModal(itemName, qty) {
+        hideInteractionModal();
+        document.getElementById('modal-title').textContent = `Are all ${qty} x ${itemName} priced the same?`;
+        document.getElementById('modal-decision-buttons').style.display='flex';
+        document.getElementById('modal-close-btn').style.display='inline-block';
+        interactionOverlay.style.display='flex';
+        document.getElementById('modal-same-btn').onclick = () => { hideInteractionModal(); showSinglePriceInputModal(itemName, qty, true); };
+        document.getElementById('modal-diff-btn').onclick = () => {
+            currentItemPricingState = { itemName, totalQty:qty, currentUnit:0, prices:[] };
+            hideInteractionModal(); showIterativePriceInputModal();
+        };
+    }
+
+    function showIterativePriceInputModal() {
+        if (currentItemPricingState.currentUnit >= currentItemPricingState.totalQty) { finishIndividualPricing(); return; }
+        const idx = currentItemPricingState.currentUnit + 1;
+        const total = currentItemPricingState.totalQty;
+        document.getElementById('modal-title').textContent = `Enter price for ${currentItemPricingState.itemName} (${idx} of ${total})`;
+        document.getElementById('price-input').style.display='block';
+        document.getElementById('modal-confirm-btn').style.display='inline-block';
+        document.getElementById('modal-close-btn').style.display='inline-block';
+        interactionOverlay.style.display='flex';
+        document.getElementById('price-input').value=''; document.getElementById('price-input').focus();
+        document.getElementById('modal-confirm-btn').onclick = () => {
+            const v = parseFloat(document.getElementById('price-input').value);
+            if (isNaN(v) || v<=0) { showMessage('Enter valid price', '#e3342f'); return; }
+            currentItemPricingState.prices.push(v); currentItemPricingState.currentUnit++;
+            showIterativePriceInputModal();
+        };
+    }
+
+    function showDiscountInputModal() {
+        // Show the discount modal by setting its display property
+        document.getElementById('discount-input-overlay').style.display = 'flex'; 
+        // Clear previous value and reset type to percent
+        document.getElementById('discount-value-input').value = ''; 
+        document.querySelector('input[name="discountType"][value="percent"]').checked = true;
+    }
+
+    function finishIndividualPricing() {
+        const st = itemPriceState[currentItemPricingState.itemName];
+        try {
+            const total = currentItemPricingState.prices.reduce((a,b)=>a+b,0);
+            st.individualPrices = JSON.stringify(currentItemPricingState.prices);
+            st.totalPrice = total; st.unitPrice = 0;
+            updateItemRowUI(currentItemPricingState.itemName);
+            showMessage(`Total price set: ${formatPrice(total)}`, '#38c172');
+        } catch(e) { showMessage('Error saving prices', '#e3342f'); }
+        finally { hideInteractionModal(); resetPricingState(); }
+    }
+
+    function hideInteractionModal() {
+        interactionOverlay.style.display='none';
+        document.getElementById('modal-title').textContent=''; document.getElementById('price-input').style.display='none';
+        document.getElementById('modal-decision-buttons').style.display='none';
+        document.getElementById('modal-confirm-btn').style.display='none';
+        document.getElementById('modal-close-btn').style.display='none';
+        document.getElementById('price-input').value='';
+        document.getElementById('modal-confirm-btn').onclick = null;
+    }
+
+    function resetPricingState() { currentItemPricingState = { itemName:'', totalQty:0, currentUnit:0, prices:[] }; }
+
+    function calculateOrderData() {
+        let subtotal = 0, totalItemsCount = 0, finalItems = [];
+        Object.keys(itemPriceState).forEach(name => {
+            const st = itemPriceState[name]; const cnt = st.qty;
+            if (cnt > 0) {
+                totalItemsCount += cnt;
+                if (st.individualPrices) {
+                    try {
+                        const arr = JSON.parse(st.individualPrices);
+                        arr.forEach((pr,i)=> { subtotal += pr; finalItems.push({ item:`${name} (${i+1})`, quantity:1, unitPrice:pr, totalAmount:pr }); });
+                    } catch(e){ console.error('parse ind pr', e); }
+                } else if (st.totalPrice > 0 && st.unitPrice > 0) {
+                    const totalAmount = st.totalPrice; const unitPrice = st.unitPrice;
+                    subtotal += totalAmount; finalItems.push({ item:name, quantity:cnt, unitPrice, totalAmount });
+                }
+            }
+        });
+        // discounts
+        let discountAmount = 0, taxAmount = 0, vatAmount = 0, grandTotal = subtotal;
+        if (discountToggle && discountToggle.checked && subtotal>0 && discountState.value>0) {
+            discountState.isActive = true;
+            if (discountState.type === 'percent') discountAmount = subtotal * (discountState.value/100);
+            else discountAmount = Math.min(discountState.value, subtotal);
+            discountState.amount = discountAmount;
+        } else { discountState.amount = 0; discountState.isActive = false; }
+        const netAfterDiscount = subtotal - discountAmount;
+        if (taxToggle10 && taxToggle10.checked) taxAmount = netAfterDiscount * TAX_RATE;
+        if (vatToggle && vatToggle.checked) vatAmount = netAfterDiscount * VAT_RATE;
+        grandTotal = netAfterDiscount + taxAmount + vatAmount;
+        currentOrderData = { items: finalItems, subtotal, totalItemsCount, discountAmount, taxAmount, vatAmount, grandTotal, customerName: currentOrderData.customerName || 'Guest Customer' };
+        return currentOrderData;
+    }
+
+    function updateOrderSummary() {
+        const data = calculateOrderData();
+        const summaryItemsList = document.getElementById('summary-items-list');
+        summaryItemsList.innerHTML = data.items.length ? data.items.map(it => `<div class="summary-item-row"><div>${it.item}</div><div style="text-align:center">${it.quantity}</div><div style="text-align:right">${formatPrice(it.unitPrice)}</div><div style="text-align:right">${formatPrice(it.totalAmount)}</div></div>`).join('') : '<div style="text-align:center;padding:18px;color:#ddd">No priced items</div>';
+        document.getElementById('summary-total-items').textContent = data.totalItemsCount;
+        document.getElementById('summary-subtotal').textContent = formatPrice(data.subtotal);
+        document.getElementById('summary-tax-amount').textContent = formatPrice(data.taxAmount);
+        document.getElementById('summary-vat-amount').textContent = formatPrice(data.vatAmount);
+        document.getElementById('summary-discount-amount').textContent = formatPrice(data.discountAmount);
+        document.getElementById('summary-total').textContent = formatPrice(data.grandTotal);
+    }
+
+    function updateBillView() {
+        const data = calculateOrderData();
+        // FIX: Updated grid-template-columns ratio to match the header (3fr 1fr 1.3fr 1.3fr)
+        document.getElementById('bill-items-container').innerHTML = data.items.length ? data.items.map(it => `<div class="bill-item-row" style="display:grid;grid-template-columns:3fr 1fr 1.3fr 1.3fr;padding:8px 6px;border-bottom:1px dotted #eee"><div>${it.item}</div><div style="text-align:center">${it.quantity}</div><div style="text-align:right">${formatPrice(it.unitPrice)}</div><div style="text-align:right">${formatPrice(it.totalAmount)}</div></div>`).join('') : '<div style="text-align:center;padding:18px;color:#666">No items to print.</div>';
+        document.getElementById('bill-total-items').textContent = data.totalItemsCount;
+        document.getElementById('bill-subtotal').textContent = formatPrice(data.subtotal);
+        document.getElementById('bill-tax-amount').textContent = formatPrice(data.taxAmount);
+        document.getElementById('bill-vat-amount').textContent = formatPrice(data.vatAmount);
+        document.getElementById('bill-discount-amount').textContent = formatPrice(data.discountAmount);
+        document.getElementById('bill-total').textContent = formatPrice(data.grandTotal);
+        document.getElementById('bill-customer-name').textContent = data.customerName;
+        document.getElementById('bill-date').textContent = new Date().toLocaleString();
+    }
+
+    function clearAllOrderData() {
+        initializeItemState();
+        currentOrderData = { items:[], subtotal:0, totalItemsCount:0, taxAmount:0, vatAmount:0, discountAmount:0, grandTotal:0, customerName:'Guest Customer' };
+        discountState = { type:'percent', value:0, amount:0.00, isActive:false };
+        currentItemPricingState = { itemName:'', totalQty:0, currentUnit:0, prices:[] };
+        renderItemsForCategory(currentCategory || Object.keys(CATEGORIES_DATA)[0]);
+    }
+
+    // -----------------------
+    // Report rendering
+    // -----------------------
+    function renderReportView() {
+        const data = loadDailySales();
+        const categories = data.categories || {};
+        const rows = Object.keys(categories).length ? Object.keys(categories).map(cat => {
+            const c = categories[cat];
+            return `<tr>
+                <td>${cat}</td>
+                <td>${c.qty}</td>
+                <td>${formatPrice(c.subtotal)}</td>
+                <td>${formatPrice(c.discount)}</td>
+                <td>${formatPrice(c.tax)}</td>
+                <td>${formatPrice(c.vat)}</td>
+                <td>${formatPrice(c.grandTotal)}</td>
+            </tr>`;
+        }).join('') : `<tr><td colspan="7" style="text-align:center;color:#666">No sales yet today</td></tr>`;
+        // totals
+        let totals = { qty:0, subtotal:0, discount:0, tax:0, vat:0, grandTotal:0 };
+        Object.values(categories).forEach(c => {
+            totals.qty += c.qty || 0;
+            totals.subtotal += c.subtotal || 0;
+            totals.discount += c.discount || 0;
+            totals.tax += c.tax || 0;
+            totals.vat += c.vat || 0;
+            totals.grandTotal += c.grandTotal || 0;
+        });
+        const table = `<div style="overflow:auto">
+            <table class="report-table" style="width:100%;border-collapse:collapse">
+                <thead><tr><th>Category</th><th>Qty</th><th>Subtotal</th><th>Discount</th><th>Tax</th><th>VAT</th><th>Grand Total</th></tr></thead>
+                <tbody>${rows}</tbody>
+                <tfoot><tr style="font-weight:900;background:#f3f3f3"><td>Total</td><td>${totals.qty}</td><td>${formatPrice(totals.subtotal)}</td><td>${formatPrice(totals.discount)}</td><td>${formatPrice(totals.tax)}</td><td>${formatPrice(totals.vat)}</td><td>${formatPrice(totals.grandTotal)}</td></tr></tfoot>
+            </table>
+        </div>`;
+        document.getElementById('report-card').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div><strong>Report for ${data.date}</strong></div></div>${table}`;
+    }
+
+    // -----------------------
+    // Init + boot
+    // -----------------------
+    function bootApp() {
+        initializeItemState();
+        setupEventListeners();
+        window.securityConfig = loadSecurityConfig();
+        if (!window.securityConfig) showView('setup'); else showView('login');
+    }
+
+    // -----------------------
+    // Small helpers
+    // -----------------------
+    function simpleHash(str) {
+        let hash = 0; if (!str) return '0';
+        for (let i=0;i<str.length;i++){ const ch = str.charCodeAt(i); hash = ((hash<<5)-hash)+ch; hash |= 0; }
+        return Math.abs(hash).toString(16);
+    }
+
+    // -----------------------
+    // Start
+    // -----------------------
+    document.addEventListener('DOMContentLoaded', bootApp);
+    </script>
+</body>
+</html>
