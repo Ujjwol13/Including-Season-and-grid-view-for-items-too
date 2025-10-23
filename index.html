@@ -141,27 +141,41 @@
             justify-content: center; 
             flex-shrink: 0; 
             margin-top: auto;
+            border-radius:20px;
+            border:2px solid white;
+            padding:2px 2px;
+            color: white;
+            
         }
 
         .quantity-select,.quantity-input{
             width:50px;
             padding:2px;          
             height: 32px;         
-            border-radius:20px;
-            border:0;
             text-align:left;
             box-sizing:border-box;
-            font-size:0.7em
+            font-size:0.7em;
+            /* Background chai complete transparent */
+            background:rgba(190, 176, 176, 0);
+            /* Border 0 rekhena vane kei default border lagxa so keep 0 */
+            border:0; 
+            border-radius:20px;
+            
         }
 
         .price-btn{
-            padding: 2px;    /* Reduced vertical padding */
-            border-radius:20px;
-            border:0; 
+            padding: 4px;    /* Reduced vertical padding */
+           
             height: 32px;         /* Reduced from 40px */
             min-width:60px;       /* Slightly smaller min-width */
             cursor:pointer;
-            font-size:0.7em
+            font-size:0.7em;
+            /* Background chai complete transparent */
+            background:rgba(190, 176, 176, 0);
+            /* Border 0 rekhena vane kei default border lagxa so keep 0 */
+            border:0;
+            text-align:right;
+            
         }
 
         
@@ -1241,3 +1255,4 @@
     </script>
 </body>
 </html>
+
